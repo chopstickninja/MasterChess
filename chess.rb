@@ -1,10 +1,13 @@
 require 'colorize'
 
+
 class ChessGame
 end
 
+
 class Player
 end
+
 
 class Board
   attr_accessor :grid
@@ -100,6 +103,9 @@ class Board
     board_string.join("\n")
   end
 
+  def empty?(x, y)
+    self[x, y] == " "
+  end
 end
 
 
@@ -148,22 +154,38 @@ end
 
 
 class Slider < Piece
+
+  def filter_possible_positions
+    filtered = []
+
+    self.possible_positions.each do |position|
+      x, y = position
+
+
+    end
+
+  end
+
+  def move(new_position)
+    x, y = new_position
+  end
+
   def possible_positions
     x, y = @position
-    new_positions = []
+    possible_positions = []
 
     self.steps.each do |direction|
         until self.out_of_bounds?(x, y)
           i, j  = direction
           x, y  = x + i, y + j
-          new_positions << [x, y] unless self.out_of_bounds?(x, y)
+          possible_positions << [x, y] unless self.out_of_bounds?(x, y)
         end
 
         # DUH! We need to reset back to the original spot!
         x, y = @position
     end
 
-    new_positions
+    possible_positions
   end
 end
 
@@ -207,20 +229,6 @@ class Pawn < Piece
 end
 
 
-
-#knight = Knight.new([3,3])
-#king = King.new([5,4])
-
-#p knight.possible_positions
-#p king.possible_positions
-
-
-
-#p r.possible_positions
-#p b.possible_positions
-#p q.possible_positions
-#p s.rook_positions
-#p s.bishop_positions
 
 
 board = Board.new
