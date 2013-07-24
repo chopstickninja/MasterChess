@@ -27,6 +27,10 @@ class Piece
     @board[@position] = self
   end
 
+  def to_s
+    "#{self.class.name}"
+  end
+
   def valid_move?(new_position)
     self.possible_positions.include?(new_position)
   end
@@ -40,15 +44,11 @@ class Piece
     val.colorize(@color)
   end
 
-  def to_s
-    "#{self.class.name}"
-  end
 end
 
 
 class Stepper < Piece
   def possible_positions
-    p "Stepper Possible Positions"
     new_positions = []
 
     self.steps.each do |move|
