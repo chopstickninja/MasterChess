@@ -2,65 +2,47 @@ require 'colorize'
 
 
 class ChessGame
+  attr :player1, :player2
 
   def self.new_game
   end
 
-  def initialize(player1, player2)
+  def get_move
+    puts "Make a move! E.g. F2, F3" #[f,2][f,3]
+    player_moves = gets.chomp.downcase.split(",")
+    move = []
+
+    player_moves.each do |player_move|
+      move << [player_move[0].ord - "a".ord, player_move[1].to_i - 1]
+    end
+    move
+  end
+
+  def initialize
     @board = Board.new
+  #   @current_player = player1
+  #   @player1 = player1
+  #   @player2 = player2
   end
 
   def play
-
-    until won?
+    puts "You're playing chess..."
+    until @board.won?
+      play_turn
     end
-
   end
 
-  def won?
-    return true if self.find_kings.length < 2
-    self.king_in_check?
+  def change_player
+    @current_player = @player2 if (@current_player == @player1)
+    @current_player = @player1
+    #FIX THIS SHIT
   end
 
-  def king_in_check?
-    kings = self.find_kings
-    pieces = self.get_pieces
-
-    kings.each do |king|
-      pieces.each do |piece|
-        next if piece == king
-        return true if in_check?(king, piece)
-      end
-    end
-
-    false
-  end
-
-  def in_check?(king, piece)
-    king.possible_positions.any { |item| piece.possible_moves.include?(item) }
-  end
-
-  def get_pieces
-    pieces = []
-
-    @board.grid.each do |row|
-      row.each do |item|
-        pieces << item if item.is_a(Piece)
-      end
-    end
-
-    pieces
-  end
-
-  def find_kings()
-    kings = []
-    @board.grid.each do |row|
-      row.each do |piece|
-        kings << piece if piece.class.name == "King"
-      end
-    end
-
-    kings
+  def play_turn
+    #make sure color matches player whose turn it is
+    puts @board
+    move = get_move
+    @board.move(move[0], move[1])
   end
 end
 
@@ -79,15 +61,38 @@ end
 class Board
   attr_accessor :grid
 
+  def self.build_empty_board
+    b = Board.new
+    b.grid = []
+    8.times { b.grid << ["."] * 8 }
+
+    b
+  end
+
   def build_board
     @grid = []
     8.times { @grid << ["."] * 8 }
     pieces = build_set_of_pieces
 
     pieces.each do |piece|
-      x, y = piece.position
-      self[x, y] = piece
+      self[piece.position] = piece
     end
+  end
+
+  def dup
+    new_board = Board.build_empty_board
+
+    @grid.each_with_index do |row, i|
+      row.each_with_index do |space, j|
+        if space.class != String
+          position = space.position
+          color    = space.color
+          space.class.new(position, color, new_board)
+        end
+      end
+    end
+
+    new_board
   end
 
   def initialize
@@ -95,12 +100,14 @@ class Board
   end
 
   # Setter - board[x, y] = obj
-  def []=(x, y, obj)
+  def []=(pos, obj)
+    x, y = pos
     @grid[y][x] = obj
   end
 
   #Getter
-  def [](x, y)
+  def [](pos)
+    x, y = pos
     @grid[y][x]
   end
 
@@ -143,6 +150,25 @@ class Board
 
   end
 
+  def empty?(position)
+    self[position] == "."
+  end
+
+  def move(pos, new_pos)
+    piece = self[pos]
+
+    if piece.is_a?(Piece) && piece.valid_move?(new_pos)
+      piece.move(new_pos)
+
+    elsif !piece.is_a?(Piece) || !piece.valid_move?(new_pos)
+      puts "\nYou dumbfuck that wasn't a piece!\n" if !piece.is_a?(Piece)
+      puts "\nThat wasn't a valid move!\n"     if  piece.is_a?(Piece)
+    end
+  end
+
+  def move!(pos, new_pos)
+  end
+
   def to_s
     #loops through board and calls piece.value, appends to string
     board_string = []
@@ -169,25 +195,81 @@ class Board
     board_string.join("\n")
   end
 
-  def empty?(x, y)
-    self[x, y] == "."
+  def king_in_check?
+    # Check -> When an opponents piece can capture the king
+    # Checkmate -> if the king can't move from the check or use a piece
+    # to block the check
+    kings  = self.find_kings
+    pieces = self.get_pieces
+
+    kings.each do |king|
+      pieces.each do |piece|
+        next if piece == king
+        return true if self.piece_checks_king?(king, piece)
+      end
+    end
+
+    false
+  end
+
+  def piece_checks_king?(king, piece)
+    piece.possible_positions.any { |position| position == king.position }
+  end
+
+  def get_pieces
+    pieces = []
+
+    @board.grid.each do |row|
+      row.each do |item|
+        pieces << item if item.is_a(Piece)
+      end
+    end
+
+    pieces
+  end
+
+  def find_kings()
+    kings = []
+    @board.grid.each do |row|
+      row.each do |piece|
+        kings << piece if piece.class.name == "King"
+      end
+    end
+
+    kings
+  end
+
+  def won?
+    # TO FUCKING DO
+    return false
   end
 end
 
 
 class Piece
-  attr_accessor :position, :color
+  attr_accessor :position, :color, :board
 
   def initialize(position, color, board)
     @position = position
     @color    = color
     @board    = board
+
+    update_board
   end
 
-  def move(new_position)
-    possible_positions = self.possible_positions
-    raise PositionError unless valid_move?(new_position)
-    @position = new_position
+  def legal_move?(new_position)
+    other = @board[new_position]
+    return false if self.out_of_bounds?(new_position)
+    return false if !@board.empty?(new_position) && self.color == other.color
+
+    true
+  end
+
+  def move(new_pos)
+    @board[self.position] = "."
+    @position             = new_pos
+
+    self.update_board
   end
 
   def valid_move?(new_position)
@@ -207,7 +289,12 @@ class Piece
     "#{self.class.name}"
   end
 
-  def out_of_bounds?(x, y)
+  def update_board
+    @board[@position] = self
+  end
+
+  def out_of_bounds?(pos)
+    x, y = pos
     (x > 7 || x < 0 ) || (y > 7 || y < 0)
   end
 end
@@ -215,57 +302,48 @@ end
 
 class Stepper < Piece
   def possible_positions
-    # TODO -> just pass around positions array not x y
+    p "Stepper Possible Positions"
     new_positions = []
 
     self.steps.each do |move|
       i, j = move
       x, y = @position
-      x, y = x + i, y + j
+      new_position = [x + i, y + j]
 
-      if self.legal_move?(x, y)
-        new_positions << [x, y]
+      if self.legal_move?(new_position)
+        new_positions << new_position
       end
     end
 
     new_positions
   end
 
-
-  def legal_move?(x, y)
-    other = @board[x, y]
-    return false if self.out_of_bounds?(x, y)
-    return false if !@board.empty?(x, y) && self.color == other.color
-
-    true
-  end
-
 end
 
 
 class Slider < Piece
-  def move(new_position)
-    x, y = new_position
-  end
-
   def possible_positions
-    x, y = @position
+    new_position = @position
     possible_positions = []
 
     self.steps.each do |direction|
-        until self.out_of_bounds?(x, y) #|| this space is occupied by same color
-          i, j  = direction
-          x, y  = x + i, y + j
+      x, y  = new_position
+      i, j  = direction
+      new_position  = [x + i, y + j]
 
-          if @board.empty?(x, y) || @board[x, y].color != self.color
-            possible_positions << [x, y] unless self.out_of_bounds?(x, y)
-          end
-
-          break if !@board.empty?(x, y)
+      until self.out_of_bounds?(new_position)
+        if @board.empty?(new_position) || @board[new_position].color != self.color
+          possible_positions << new_position unless self.out_of_bounds?(new_position)
         end
 
-        # DUH! We need to reset back to the original spot!
-        x, y = @position
+        break if !@board.empty?(new_position)
+
+        x, y  = new_position
+        i, j  = direction
+        new_position  = [x + i, y + j]
+      end
+
+        new_position = @position
     end
 
     possible_positions
@@ -309,8 +387,53 @@ end
 
 
 class Pawn < Piece
+#attacks diagonally, moves only forward. First move is 1 || 2, then 1.
+
+ def possible_positions
+   new_positions = []
+   #self.board[diagonal forward] !empty?
+   if @color == :white
+     diagonals = [[-1, 1], [1, 1]]
+   else
+     diagonals = [[-1, -1], [1, -1]]
+   end
+
+   diagonals.each do |diagonal|
+     x, y = diagonal
+     self_x, self_y = @position
+     diagonal = x + self_x, y + self_y
+     new_positions << diagonal if self.legal_move?(diagonal)
+   end
+
+   self.steps.each do |move|
+     i, j = move
+     x, y = @position
+
+     new_position = [x + i, y + j]
+
+     if @board.empty?(new_position)
+       new_positions << new_position
+     end
+   end
+
+   new_positions
+ end
+
+ def steps
+   steps = [[0, 1]] if @color == :white
+   steps = [[0, -1]] if @color == :black
+
+   if @color == :white && @position[1] == 1
+     steps += [[0, 2]]
+   elsif @color == :black && @position[1] == 6
+     steps += [[0, -2]]
+   end
+
+   steps
+ end
+
 end
 
 
-board = Board.new
-p board[1, 0].possible_positions
+chess = ChessGame.new
+chess.play
