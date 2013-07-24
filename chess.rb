@@ -1,7 +1,8 @@
 require 'colorize'
 require 'debugger'
 
-# My Files
+# My Filesrequire "pieces"
+
 require './board.rb'
 require './pieces.rb'
 require './player'
@@ -24,8 +25,14 @@ class ChessGame
     move
   end
 
-  def initialize(positions_hash)
-    @board = Board.new(positions_hash)
+  def initialize(custom_positions = nil)
+
+    if custom_positions
+      @board = Board.new(custom_positions)# unless custom_positions.nil?
+    else
+      @board = Board.new #if custom_positions.nil?
+    end
+
   #   @current_player = player1
   #   @player1 = player1
   #   @player2 = player2
@@ -52,12 +59,5 @@ class ChessGame
   end
 end
 
-
-positions = {
-  [0,0] => {:item => King,  :color => :black},
-  [7,7] => {:item => Queen, :color => :white}
-}
-
-
-chess = ChessGame.new(positions)
+chess = ChessGame.new
 chess.play

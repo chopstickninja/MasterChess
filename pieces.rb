@@ -9,22 +9,22 @@ class Piece
     @color    = color
     @board    = board
 
-    update_board
+    @board[@position] = self
   end
 
   def legal_move?(new_position)
     other = @board[new_position]
-    return false if self.out_of_bounds?(new_position)
+    return false if Board.out_of_bounds?(new_position)
     return false if !@board.empty?(new_position) && self.color == other.color
 
     true
   end
 
   def move(new_pos)
-    @board[self.position] = "."
+    @board[self.position] = nil
     @position             = new_pos
 
-    self.update_board
+    @board[@position] = self
   end
 
   def valid_move?(new_position)
@@ -42,15 +42,6 @@ class Piece
 
   def to_s
     "#{self.class.name}"
-  end
-
-  def update_board
-    @board[@position] = self
-  end
-
-  def out_of_bounds?(pos)
-    x, y = pos
-    (x > 7 || x < 0 ) || (y > 7 || y < 0)
   end
 end
 
@@ -86,9 +77,9 @@ class Slider < Piece
       i, j  = direction
       new_position  = [x + i, y + j]
 
-      until self.out_of_bounds?(new_position)
+      until Board.out_of_bounds?(new_position)
         if @board.empty?(new_position) || @board[new_position].color != self.color
-          possible_positions << new_position unless self.out_of_bounds?(new_position)
+          possible_positions << new_position unless Board.out_of_bounds?(new_position)
         end
 
         break if !@board.empty?(new_position)
@@ -147,11 +138,7 @@ class Pawn < Piece
  def possible_positions
    new_positions = []
    #self.board[diagonal forward] !empty?
-   if @color == :white
-     diagonals = [[-1, 1], [1, 1]]
-   else
-     diagonals = [[-1, -1], [1, -1]]
-   end
+   diagonals = @color == :white ? [[-1, 1], [1, 1]] : [[-1, -1], [1, -1]]
 
    diagonals.each do |diagonal|
      x, y = diagonal
@@ -168,6 +155,8 @@ class Pawn < Piece
 
      if @board.empty?(new_position)
        new_positions << new_position
+     else
+       break
      end
    end
 
