@@ -7,6 +7,18 @@ class Board
     self.build_board(position_hash)
   end
 
+  # Setter - board[x, y] = obj
+  def []=(pos, obj)
+    x, y = pos
+    @grid[y][x] = obj
+  end
+
+  #Getter
+  def [](pos)
+    x, y = pos
+    @grid[y][x]
+  end
+
   def self.blank_board
     blank = {}
     # use each for Pawns
@@ -33,6 +45,11 @@ class Board
     b
   end
 
+  def self.out_of_bounds?(pos)
+    x, y = pos
+    (x > 7 || x < 0 ) || (y > 7 || y < 0)
+  end
+
   def build_board(positions_hash)
     @grid = []
     8.times { @grid << [nil] * 8 }
@@ -52,7 +69,7 @@ class Board
 
     @grid.each_with_index do |row, i|
       row.each_with_index do |space, j|
-        if space.class !=
+        if !space.nil?
           position = space.position
           color    = space.color
           space.class.new(position, color, new_board)
@@ -63,40 +80,57 @@ class Board
     new_board
   end
 
-  # Setter - board[x, y] = obj
-  def []=(pos, obj)
-    x, y = pos
-    @grid[y][x] = obj
-  end
-
-  #Getter
-  def [](pos)
-    x, y = pos
-    @grid[y][x]
-  end
-
   def empty?(position)
     self[position].nil?
   end
 
+  def find_king(color)
+    self.get_pieces(color).each do |piece|
+      return piece if piece.class == King
+    end
+
+    nil
+  end
+
+  def get_pieces(color)
+    pieces = []
+    @grid.each do |row|
+      row.each do |piece|
+        pieces << piece unless piece.nil?
+      end
+    end
+
+    pieces.select{|piece| piece.color == color}
+  end
+
+  def in_check?(color)
+    #look at all opponent's pieces and call valid moves on each. if any of these
+    #valid moves contains own king's position, return true.
+
+    opponent_color = (color == :white ? :black : :white)
+    opponent_pieces = self.get_pieces(opponent_color)
+    possible_positions = []
+
+    king = self.find_king(color)
+    return false if king.nil?
+
+    opponent_pieces.each do |opponent_piece|
+      possible_positions += opponent_piece.possible_positions
+    end
+
+    possible_positions.any? {|position| position == king.position}
+  end
+
   def move(pos, new_pos)
+    #dup.move, then check in_check? ? don't allow, re-prompt : self.move
     piece = self[pos]
 
-    if !piece.nil? && piece.valid_move?(new_pos)
+    if valid_move?(pos, new_pos)
       piece.move(new_pos)
-
     else
       puts "\nYou dumbfuck that wasn't a piece!\n" if piece.nil?
       puts "\nThat wasn't a valid move!\n"     if  !piece.nil?
     end
-  end
-
-  def move!(pos, new_pos)
-  end
-
-  def self.out_of_bounds?(pos)
-    x, y = pos
-    (x > 7 || x < 0 ) || (y > 7 || y < 0)
   end
 
   def to_s
@@ -125,7 +159,19 @@ class Board
   end
 
   def won?
-    # TO FUCKING DO
+    # TODO
     return false
+  end
+
+  def valid_move?(pos, new_pos)
+    test_board = self.dup
+    test_piece = test_board[pos]
+    return false if test_piece.nil?
+    return false unless test_piece.valid_move?(new_pos)
+
+    test_piece.move(new_pos)
+    return false if test_board.in_check?(test_piece.color)
+
+    true
   end
 end
