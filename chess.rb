@@ -2,10 +2,77 @@ require 'colorize'
 
 
 class ChessGame
+
+  def self.new_game
+  end
+
+  def initialize(player1, player2)
+    @board = Board.new
+  end
+
+  def play
+
+    until won?
+    end
+
+  end
+
+  def won?
+    return true if self.find_kings.length < 2
+    self.king_in_check?
+  end
+
+  def king_in_check?
+    kings = self.find_kings
+    pieces = self.get_pieces
+
+    kings.each do |king|
+      pieces.each do |piece|
+        next if piece == king
+        return true if in_check?(king, piece)
+      end
+    end
+
+    false
+  end
+
+  def in_check?(king, piece)
+    king.possible_positions.any { |item| piece.possible_moves.include?(item) }
+  end
+
+  def get_pieces
+    pieces = []
+
+    @board.grid.each do |row|
+      row.each do |item|
+        pieces << item if item.is_a(Piece)
+      end
+    end
+
+    pieces
+  end
+
+  def find_kings()
+    kings = []
+    @board.grid.each do |row|
+      row.each do |piece|
+        kings << piece if piece.class.name == "King"
+      end
+    end
+
+    kings
+  end
 end
 
 
 class Player
+  def initialize(name)
+    @name = name
+  end
+
+  def move
+    # TODO
+  end
 end
 
 
@@ -14,8 +81,7 @@ class Board
 
   def build_board
     @grid = []
-    8.times { @grid << [" "] * 8 }
-
+    8.times { @grid << ["."] * 8 }
     pieces = build_set_of_pieces
 
     pieces.each do |piece|
@@ -43,35 +109,35 @@ class Board
 
     # Build me some pawns
     8.times do |x|
-      pieces << Pawn.new( [x, 1], :white, @grid )
-      pieces << Pawn.new( [x, 6], :white, @grid )
+      pieces << Pawn.new( [x, 1], :white, self )
+      pieces << Pawn.new( [x, 6], :black, self )
     end
 
     # Build Rooks
-    pieces << Rook.new( [0, 0], :white, @grid )
-    pieces << Rook.new( [7, 0], :white, @grid )
-    pieces << Rook.new( [0, 7], :black, @grid )
-    pieces << Rook.new( [7, 7], :black, @grid )
+    pieces << Rook.new( [0, 0], :white, self )
+    pieces << Rook.new( [7, 0], :white, self )
+    pieces << Rook.new( [0, 7], :black, self )
+    pieces << Rook.new( [7, 7], :black, self )
 
     # Build Knights
-    pieces << Knight.new( [1, 0], :white, @grid)
-    pieces << Knight.new( [6, 0], :white, @grid)
-    pieces << Knight.new( [1, 7], :black, @grid)
-    pieces << Knight.new( [6, 7], :black, @grid)
+    pieces << Knight.new( [1, 0], :white, self )
+    pieces << Knight.new( [6, 0], :white, self )
+    pieces << Knight.new( [1, 7], :black, self )
+    pieces << Knight.new( [6, 7], :black, self )
 
     # Build Bishops
-    pieces << Bishop.new( [2, 0], :white, @grid)
-    pieces << Bishop.new( [5, 0], :white, @grid)
-    pieces << Bishop.new( [2, 7], :black, @grid)
-    pieces << Bishop.new( [5, 7], :black, @grid)
+    pieces << Bishop.new( [2, 0], :white, self )
+    pieces << Bishop.new( [5, 0], :white, self )
+    pieces << Bishop.new( [2, 7], :black, self )
+    pieces << Bishop.new( [5, 7], :black, self )
 
     # Build Queens
-    pieces << Queen.new( [3, 0], :white, @grid)
-    pieces << Queen.new( [3, 7], :black, @grid)
+    pieces << Queen.new( [3, 0], :white, self )
+    pieces << Queen.new( [3, 7], :black, self )
 
     # Build Kings
-    pieces << King.new( [4, 0], :white, @grid)
-    pieces << King.new( [4, 7], :black, @grid)
+    pieces << King.new( [4, 0], :white, self )
+    pieces << King.new( [4, 7], :black, self )
 
     pieces
 
@@ -81,9 +147,9 @@ class Board
     #loops through board and calls piece.value, appends to string
     board_string = []
 
-    @grid.each_with_index do |row, index|
+    @grid.reverse.each_with_index do |row, index|
       row = row.map do |piece|
-        if piece != " "
+        if piece != "."
           piece.value
         else
           piece
@@ -104,13 +170,13 @@ class Board
   end
 
   def empty?(x, y)
-    self[x, y] == " "
+    self[x, y] == "."
   end
 end
 
 
 class Piece
-  attr_accessor :position
+  attr_accessor :position, :color
 
   def initialize(position, color, board)
     @position = position
@@ -129,43 +195,55 @@ class Piece
   end
 
   def value
-    return "N" if self.class.name == "Knight"
-    self.class.name[0]
+    if self.class.name == "Knight"
+      val = "N"
+    else
+      val = self.class.name[0]
+    end
+    val.colorize(@color)
+  end
+
+  def to_s
+    "#{self.class.name}"
   end
 
   def out_of_bounds?(x, y)
     (x > 7 || x < 0 ) || (y > 7 || y < 0)
   end
-
 end
+
 
 class Stepper < Piece
   def possible_positions
+    # TODO -> just pass around positions array not x y
     new_positions = []
 
     self.steps.each do |move|
       i, j = move
       x, y = @position
-      new_positions << [x + i, y + j]
+      x, y = x + i, y + j
+
+      if self.legal_move?(x, y)
+        new_positions << [x, y]
+      end
     end
-    new_positions.select {|x, y| !self.out_of_bounds?(x, y)}
+
+    new_positions
   end
+
+
+  def legal_move?(x, y)
+    other = @board[x, y]
+    return false if self.out_of_bounds?(x, y)
+    return false if !@board.empty?(x, y) && self.color == other.color
+
+    true
+  end
+
 end
 
 
 class Slider < Piece
-
-  def filter_possible_positions
-    filtered = []
-
-    self.possible_positions.each do |position|
-      x, y = position
-
-
-    end
-
-  end
-
   def move(new_position)
     x, y = new_position
   end
@@ -175,10 +253,15 @@ class Slider < Piece
     possible_positions = []
 
     self.steps.each do |direction|
-        until self.out_of_bounds?(x, y)
+        until self.out_of_bounds?(x, y) #|| this space is occupied by same color
           i, j  = direction
           x, y  = x + i, y + j
-          possible_positions << [x, y] unless self.out_of_bounds?(x, y)
+
+          if @board.empty?(x, y) || @board[x, y].color != self.color
+            possible_positions << [x, y] unless self.out_of_bounds?(x, y)
+          end
+
+          break if !@board.empty?(x, y)
         end
 
         # DUH! We need to reset back to the original spot!
@@ -229,7 +312,5 @@ class Pawn < Piece
 end
 
 
-
-
 board = Board.new
-p board
+p board[1, 0].possible_positions
