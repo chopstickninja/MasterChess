@@ -3,54 +3,41 @@ require './pieces.rb'
 class Board
   attr_accessor :grid
 
-  def self.build_empty_board
-    b = Board.new
-    b.grid = []
-    8.times { b.grid << ["."] * 8 }
+  def self.default_positions
 
-    b
-  end
+    # TODO this shit
 
-  def build_board
-    @grid = []
-    8.times { @grid << ["."] * 8 }
-    pieces = build_set_of_pieces
+    # {
+    #   Pawn.new( [x, 1], :white, self
+    #   Pawn.new( [x, 6], :black, self
+    #
+    #   # Build Rooks
+    #   Rook.new( [0, 0], :white, self
+    #   Rook.new( [7, 0], :white, self
+    #   Rook.new( [0, 7], :black, self
+    #   Rook.new( [7, 7], :black, self
+    #
+    #   # Build Knights
+    #   Knight.new( [1, 0], :white, self
+    #   Knight.new( [6, 0], :white, self
+    #   Knight.new( [1, 7], :black, self
+    #   Knight.new( [6, 7], :black, self
+    #
+    #   # Build Bishops
+    #   Bishop.new( [2, 0], :white, self
+    #   Bishop.new( [5, 0], :white, self
+    #   Bishop.new( [2, 7], :black, self
+    #   Bishop.new( [5, 7], :black, self
+    #
+    #   # Build Queens
+    #   Queen.new( [3, 0], :white, self
+    #   Queen.new( [3, 7], :black, self
+    #
+    #   # Build Kings
+    #   King.new( [4, 0], :white, self
+    #   King.new( [4, 7], :black, self
+    # }
 
-    pieces.each do |piece|
-      self[piece.position] = piece
-    end
-  end
-
-  def dup
-    new_board = Board.build_empty_board
-
-    @grid.each_with_index do |row, i|
-      row.each_with_index do |space, j|
-        if space.class != String
-          position = space.position
-          color    = space.color
-          space.class.new(position, color, new_board)
-        end
-      end
-    end
-
-    new_board
-  end
-
-  def initialize
-    self.build_board
-  end
-
-  # Setter - board[x, y] = obj
-  def []=(pos, obj)
-    x, y = pos
-    @grid[y][x] = obj
-  end
-
-  #Getter
-  def [](pos)
-    x, y = pos
-    @grid[y][x]
   end
 
   def build_set_of_pieces
@@ -90,6 +77,58 @@ class Board
 
     pieces
 
+  end
+
+  def self.build_empty_board
+    b = Board.new
+    b.grid = []
+    8.times { b.grid << ["."] * 8 }
+
+    b
+  end
+
+  def build_board(positions_hash)
+    @grid = []
+    8.times { @grid << ["."] * 8 }
+
+    positions_hash.each do |position, piece_hash|
+      color = piece_hash[:color]
+      piece = piece_hash[:item].new(position, color, self)
+
+      self[position] = piece
+    end
+  end
+
+  def dup
+    new_board = Board.build_empty_board
+
+    @grid.each_with_index do |row, i|
+      row.each_with_index do |space, j|
+        if space.class != String
+          position = space.position
+          color    = space.color
+          space.class.new(position, color, new_board)
+        end
+      end
+    end
+
+    new_board
+  end
+
+  def initialize(position_hash=Board.default_positions)
+    self.build_board(position_hash)
+  end
+
+  # Setter - board[x, y] = obj
+  def []=(pos, obj)
+    x, y = pos
+    @grid[y][x] = obj
+  end
+
+  #Getter
+  def [](pos)
+    x, y = pos
+    @grid[y][x]
   end
 
   def empty?(position)

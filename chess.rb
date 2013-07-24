@@ -24,8 +24,8 @@ class ChessGame
     move
   end
 
-  def initialize
-    @board = Board.new
+  def initialize(positions_hash)
+    @board = Board.new(positions_hash)
   #   @current_player = player1
   #   @player1 = player1
   #   @player2 = player2
@@ -46,7 +46,6 @@ class ChessGame
 
   def play_turn
     #make sure color matches player whose turn it is
-    debugger
     puts @board
     move = get_move
     @board.move(move[0], move[1])
@@ -54,10 +53,11 @@ class ChessGame
 end
 
 
+positions = {
+  [0,0] => {:item => King,  :color => :black},
+  [7,7] => {:item => Queen, :color => :white}
+}
 
 
-chess = ChessGame.new
+chess = ChessGame.new(positions)
 chess.play
-
-{ [0, 0] => { :type => King, :color => :black },
-  }

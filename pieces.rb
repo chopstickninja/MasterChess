@@ -1,9 +1,6 @@
 require './board.rb'
 
 
-
-
-
 class Piece
   attr_accessor :position, :color, :board
 
