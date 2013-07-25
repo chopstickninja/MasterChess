@@ -9,7 +9,7 @@ require './player'
 
 
 class ChessGame
-  attr :player1, :player2
+  attr :player1, :player2, :board
 
   def self.new_game
   end
@@ -32,16 +32,14 @@ class ChessGame
     else
       @board = Board.new #if custom_positions.nil?
     end
-
-  #   @current_player = player1
-  #   @player1 = player1
-  #   @player2 = player2
   end
 
   def play
     puts "You're playing chess..."
     until @board.won?
       play_turn
+
+      #p "Has the board been won? #{@board.won?}"
     end
   end
 
@@ -59,5 +57,23 @@ class ChessGame
   end
 end
 
+
 chess = ChessGame.new
 chess.play
+
+
+# p chess.board[[0, 1]].class
+# p chess.board[[0, 1]].possible_positions
+# puts
+#
+# p chess.board[[1, 0]].class
+# p chess.board[[1, 0]].possible_positions
+#
+# p chess.board[[2, 0]].class
+# p chess.board[[2, 0]].possible_positions
+#
+# p chess.board[[3, 0]].class
+# p chess.board[[3, 0]].possible_positions
+#
+# p chess.board[[4, 0]].class
+# p chess.board[[4, 0]].possible_positions

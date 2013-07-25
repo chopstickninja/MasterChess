@@ -13,8 +13,8 @@ class Piece
   end
 
   def legal_move?(new_position)
-    other = @board[new_position]
     return false if Board.out_of_bounds?(new_position)
+    other = @board[new_position]
     return false if !@board.empty?(new_position) && self.color == other.color
 
     true
@@ -144,7 +144,10 @@ class Pawn < Piece
      x, y = diagonal
      self_x, self_y = @position
      diagonal = x + self_x, y + self_y
-     new_positions << diagonal if self.legal_move?(diagonal)
+      next unless !@board[diagonal].nil? && @board[diagonal].color != self.color
+      next unless self.legal_move?(diagonal)
+
+      new_positions << diagonal
    end
 
    self.steps.each do |move|

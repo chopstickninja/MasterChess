@@ -64,6 +64,19 @@ class Board
     end
   end
 
+  def checkmate?(color)
+    self.get_pieces(color).each do |piece|
+      piece.possible_positions.each do |position|
+        # valid move checks to see if the move will put the board
+        # in check. if it does it will return false. Hence a valid move
+        # means that the board cannot be in checkmate.
+        return false if self.valid_move?(piece.position,position)
+      end
+    end
+
+    true
+  end
+
   def dup
     new_board = Board.build_empty_board
 
@@ -100,7 +113,7 @@ class Board
       end
     end
 
-    pieces.select{|piece| piece.color == color}
+    pieces.select{ |piece| piece.color == color }
   end
 
   def in_check?(color)
@@ -159,8 +172,9 @@ class Board
   end
 
   def won?
-    # TODO
-    return false
+    return true if self.checkmate?(:white)
+    return true if self.checkmate?(:black)
+    false
   end
 
   def valid_move?(pos, new_pos)
