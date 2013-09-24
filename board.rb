@@ -141,7 +141,7 @@ class Board
     if valid_move?(pos, new_pos)
       piece.move(new_pos)
     else
-      puts "\nYou dumbfuck that wasn't a piece!\n" if piece.nil?
+      puts "\nThat wasn't a piece!\n" if piece.nil?
       puts "\nThat wasn't a valid move!\n"     if  !piece.nil?
     end
   end
